@@ -68,6 +68,11 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     'echo "[{rabbit, [{loopback_users, []}]}]." > /etc/rabbitmq/rabbitmq.config'
   config.vm.provision "shell", inline: 'apt-get -y install rabbitmq-server'
   config.vm.provision "shell", inline: 'rabbitmq-plugins enable rabbitmq_management'
+  
+  config.vm.provision "shell", inline: 'apt-get -y install libapache2-mod-php5 php5-curl'
+  
+  config.vm.provision "shell", inline:
+    'wget -O - https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer'
 
   # Enable provisioning with Puppet stand alone.  Puppet manifests
   # are contained in a directory path relative to this Vagrantfile.
