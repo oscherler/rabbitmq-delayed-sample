@@ -59,11 +59,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.provision "shell", inline: 'apt-get update'
   config.vm.provision "shell", inline: 'apt-get -y install python-software-properties'
   config.vm.provision "shell", inline:
-  	'add-apt-repository "deb http://www.rabbitmq.com/debian/ testing main"'
+    'add-apt-repository "deb http://www.rabbitmq.com/debian/ testing main"'
   config.vm.provision "shell", inline:
-  	'wget -O - http://www.rabbitmq.com/rabbitmq-signing-key-public.asc | apt-key add -'
+    'wget -O - http://www.rabbitmq.com/rabbitmq-signing-key-public.asc | apt-key add -'
   config.vm.provision "shell", inline: 'apt-get update'
-  config.vm.provision "shell", inline: 'echo "[{rabbit, [{loopback_users, []}]}]." > /etc/rabbitmq/rabbitmq.config'
+  config.vm.provision "shell", inline:
+    'echo "[{rabbit, [{loopback_users, []}]}]." > /etc/rabbitmq/rabbitmq.config'
   config.vm.provision "shell", inline: 'apt-get -y install rabbitmq-server'
   config.vm.provision "shell", inline: 'rabbitmq-plugins enable rabbitmq_management'
 
