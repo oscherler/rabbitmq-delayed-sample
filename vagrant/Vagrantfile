@@ -74,6 +74,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.provision "shell", inline:
     'wget -O - https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer'
 
+  config.vm.provision "shell", inline:
+    'cp /vagrant/vagrant/vhost.conf /etc/apache2/sites-available/rabbitmq-sample'
+  config.vm.provision "shell", inline: 'a2enmod rewrite'
+  config.vm.provision "shell", inline: 'a2ensite rabbitmq-sample'
+  config.vm.provision "shell", inline: 'service apache2 restart'
+
   # Enable provisioning with Puppet stand alone.  Puppet manifests
   # are contained in a directory path relative to this Vagrantfile.
   # You will need to create the manifests directory and a manifest in
