@@ -55,6 +55,15 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # View the documentation for the provider you're using for more
   # information on available options.
 
+  config.vm.provision "shell", inline: 'apt-get update'
+  config.vm.provision "shell", inline: 'apt-get -y install python-software-properties'
+  config.vm.provision "shell", inline:
+  	'add-apt-repository "deb http://www.rabbitmq.com/debian/ testing main"'
+  config.vm.provision "shell", inline:
+  	'wget -O - http://www.rabbitmq.com/rabbitmq-signing-key-public.asc | apt-key add -'
+  config.vm.provision "shell", inline: 'apt-get update'
+  config.vm.provision "shell", inline: 'apt-get -y install rabbitmq-server'
+
   # Enable provisioning with Puppet stand alone.  Puppet manifests
   # are contained in a directory path relative to this Vagrantfile.
   # You will need to create the manifests directory and a manifest in
