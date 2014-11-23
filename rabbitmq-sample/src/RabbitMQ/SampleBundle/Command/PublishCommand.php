@@ -33,6 +33,12 @@ class PublishCommand extends ContainerAwareCommand
 	{
 		$connection = new AMQPConnection( 'localhost', 5672, 'guest', 'guest' );
 		$channel = $connection->channel();
+		
+		$channel->queue_declare( 'delay', false, true, false, false, false, array(
+			'x-message-ttl' => array( 'I', 10000 ),
+			'x-dead-letter-exchange' => array( 'S', '' ),
+			'x-dead-letter-routing-key' => array( 'S', 'task_queue' )
+		) );
 
 		$data = 'Hello';
 		$msg = new AMQPMessage(
@@ -42,7 +48,7 @@ class PublishCommand extends ContainerAwareCommand
 			)
 		);
 
-		$channel->basic_publish( $msg, '', 'task_queue' );
+		$channel->basic_publish( $msg, '', 'delay' );
 
 		$output->writeln( " [x] Sent " . $data );
 	}
