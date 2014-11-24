@@ -1,5 +1,11 @@
 # This file is a "template" of what your parameters.yml file should look like
 parameters:
+    rabbitmq_host: localhost
+    rabbitmq_port: 5672
+    rabbitmq_user: guest
+    rabbitmq_password: guest
+    rabbitmq_vhost: /
+
     database_driver:   pdo_mysql
     database_host:     127.0.0.1
     database_port:     ~
@@ -22,9 +28,3 @@ parameters:
     debug_toolbar:          true
     debug_redirects:        false
     use_assetic_controller: true
-
-    rabbitmq_host: localhost
-    rabbitmq_port: 5672
-    rabbitmq_user: guest
-    rabbitmq_password: guest
-    rabbitmq_vhost: /
