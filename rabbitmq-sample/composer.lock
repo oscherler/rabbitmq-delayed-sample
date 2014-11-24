@@ -4,7 +4,7 @@
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "e1a56175481322445225591b53535bd8",
+    "hash": "9bfe01429e1d467a194c6466abff34fc",
     "packages": [
         {
             "name": "doctrine/annotations",
@@ -860,6 +860,59 @@
                 "psr-3"
             ],
             "time": "2014-09-30 13:30:58"
+        },
+        {
+            "name": "oldsound/rabbitmq-bundle",
+            "version": "v1.5.0",
+            "target-dir": "OldSound/RabbitMqBundle",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/videlalvaro/RabbitMqBundle.git",
+                "reference": "0c84f33f0233c29526cfca41bf6434119f917996"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/videlalvaro/RabbitMqBundle/zipball/0c84f33f0233c29526cfca41bf6434119f917996",
+                "reference": "0c84f33f0233c29526cfca41bf6434119f917996",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.0",
+                "symfony/framework-bundle": "~2.1",
+                "symfony/yaml": "~2.0",
+                "videlalvaro/php-amqplib": "~2.4.0"
+            },
+            "require-dev": {
+                "symfony/console": "~2.0"
+            },
+            "type": "symfony-bundle",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "1.2.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-0": {
+                    "OldSound\\RabbitMqBundle\\": ""
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Alvaro Videla"
+                }
+            ],
+            "description": "Integrates php-amqplib with Symfony2 and RabbitMq",
+            "keywords": [
+                "Symfony2",
+                "message",
+                "queue",
+                "rabbitmq"
+            ],
+            "time": "2014-06-21 12:15:53"
         },
         {
             "name": "psr/log",
