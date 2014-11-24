@@ -57,33 +57,32 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # View the documentation for the provider you're using for more
   # information on available options.
 
-  config.vm.provision "shell", inline: 'apt-get update'
-  config.vm.provision "shell", inline: 'apt-get -y install python-software-properties'
-  config.vm.provision "shell", inline:
-    'add-apt-repository "deb http://www.rabbitmq.com/debian/ testing main"'
-  config.vm.provision "shell", inline:
-    'wget -O - http://www.rabbitmq.com/rabbitmq-signing-key-public.asc | apt-key add -'
-  config.vm.provision "shell", inline: 'apt-get update'
-  config.vm.provision "shell", inline: 'mkdir -p /etc/rabbitmq'
-  config.vm.provision "shell", inline:
-    'echo "[{rabbit, [{loopback_users, []}]}]." > /etc/rabbitmq/rabbitmq.config'
-  config.vm.provision "shell", inline: 'apt-get -y install rabbitmq-server'
-  config.vm.provision "shell", inline: 'rabbitmq-plugins enable rabbitmq_management'
-  
-  config.vm.provision "shell", inline: 'apt-get -y install libapache2-mod-php5 php5-curl'
-  
-  config.vm.provision "shell", inline:
-    'wget -O - https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer'
+  config.vm.provision "shell", inline: <<INSTALL_RABBITMQ
+    dpkg --get-selections | grep python-software-properties || ( apt-get update ; apt-get -y install python-software-properties )
 
-  config.vm.provision "shell", inline: 'service apache2 stop'
-  config.vm.provision "shell", inline: 'chown -R vagrant /var/lock/apache2'
-  config.vm.provision "shell", inline:
-    %q(sed -i.bak -E 's/(export\s+APACHE_RUN_(USER|GROUP)=)[^\s]+/\1vagrant/' /etc/apache2/envvars)
-  config.vm.provision "shell", inline:
-    'cp /vagrant/vagrant/vhost.conf /etc/apache2/sites-available/rabbitmq-sample'
-  config.vm.provision "shell", inline: 'a2enmod rewrite'
-  config.vm.provision "shell", inline: 'a2ensite rabbitmq-sample'
-  config.vm.provision "shell", inline: 'service apache2 start'
+	add-apt-repository "deb http://www.rabbitmq.com/debian/ testing main"
+	wget -O - http://www.rabbitmq.com/rabbitmq-signing-key-public.asc | apt-key add -
+	apt-get update
+	mkdir -p /etc/rabbitmq
+	echo "[{rabbit, [{loopback_users, []}]}]." > /etc/rabbitmq/rabbitmq.config
+	apt-get -y install rabbitmq-server
+	rabbitmq-plugins enable rabbitmq_management
+INSTALL_RABBITMQ
+
+  config.vm.provision "shell", inline: <<INSTALL_APACHE_PHP
+    apt-get -y install libapache2-mod-php5 php5-curl
+    wget -O - https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+INSTALL_APACHE_PHP
+
+  config.vm.provision "shell", inline: <<CONFIGURE_APACHE
+    service apache2 stop
+    chown -R vagrant /var/lock/apache2
+    sed -i.bak -E 's/(export\\s+APACHE_RUN_(USER|GROUP)=)[^\\s]+/\\1vagrant/' /etc/apache2/envvars
+    cp /vagrant/vagrant/vhost.conf /etc/apache2/sites-available/rabbitmq-sample
+    a2enmod rewrite
+    a2ensite rabbitmq-sample
+    service apache2 start
+CONFIGURE_APACHE
 
   # Enable provisioning with Puppet stand alone.  Puppet manifests
   # are contained in a directory path relative to this Vagrantfile.
