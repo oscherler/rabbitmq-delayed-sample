@@ -64,6 +64,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.provision "shell", inline:
     'wget -O - http://www.rabbitmq.com/rabbitmq-signing-key-public.asc | apt-key add -'
   config.vm.provision "shell", inline: 'apt-get update'
+  config.vm.provision "shell", inline: 'mkdir -p /etc/rabbitmq'
   config.vm.provision "shell", inline:
     'echo "[{rabbit, [{loopback_users, []}]}]." > /etc/rabbitmq/rabbitmq.config'
   config.vm.provision "shell", inline: 'apt-get -y install rabbitmq-server'
