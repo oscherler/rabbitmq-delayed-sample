@@ -81,12 +81,18 @@ old_sound_rabbit_mq:
             vhost:    %rabbitmq_vhost%
             lazy:     false
     producers:
-        delay_example:
+        delayed_producer:
             connection:       default
-            exchange_options: { name: 'delay-example', type: direct }
+            exchange_options: { name: 'delay-exchange', type: direct }
+            queue_options:
+                name: 'delay-waiting-queue'
+                arguments:
+                    x-dead-letter-exchange: [ 'S', 'delay-exchange' ]
+                    x-dead-letter-routing-key: [ 'S', 'working' ]
+                    x-message-ttl: [ 'I', 5000 ]
     consumers:
-        delay_example:
+        delayed_consumer:
             connection:       default
-            exchange_options: { name: 'delay-example', type: direct }
-            queue_options:    { name: 'delay-work-queue' }
+            exchange_options: { name: 'delay-exchange', type: direct }
+            queue_options:    { name: 'delay-working-queue', routing_keys: [ working ] }
             callback:         sample_consumer
