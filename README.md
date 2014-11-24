@@ -110,7 +110,7 @@ old_sound_rabbit_mq:
 
 Messages to be delayed should be published using the `delayed_producer` producer with an empty routing key (`''`). The producer publishes messages to the `delay-exchange` exchange, and since the routing key is empty, they are routed to the `delay-waiting-queue` queue.
 
-![Principle](doc/images/principle.png)
+![Principle](rabbitmq-sample/doc/images/principle.png)
 
 Since no consumer is bound to the `delay-waiting-queue` queue, messages are never processed. The queue, however, is configured with an `x-message-ttl` argument of 5000 milliseconds. Therefore, messages expire after 5 seconds and are discarded.
 
