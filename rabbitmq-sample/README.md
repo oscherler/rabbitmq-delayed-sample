@@ -46,15 +46,16 @@ Install the project dependencies using Composer:
 
 	composer install
 
-It will ask for the value of some parameters. If you are using the provided Vagrant machine, just keep the default values by hitting *Enter* until it stops asking. If you are working in your own environment, fill in the `rabbitmq_*` parameters with to connect to your RabbitMQ server, and keep the default values for the remaining parameters.
+It will ask for the value of some parameters. If you are using the provided Vagrant machine, just keep the default values by hitting *Enter* until it stops asking. If you are working in your own environment, fill in the `rabbitmq_*` parameters with the values required to connect to your RabbitMQ server, and keep the default values for the remaining parameters.
 
 ## Principle
 
-This project uses `videlalvaro/php-amqplib` and `oldsound/rabbitmq-bundle` to configure and communicate with RabbitMQ. Everything is configured under `old_sound_rabbit_mq` in `app/config/config.yml` and a sample consumer that prints messages to the console is provided in `src/RabbitMQ/SampleBundle/Consumer/SampleConsumer.php`.
+This project uses `videlalvaro/php-amqplib` and `oldsound/rabbitmq-bundle` to configure and communicate with RabbitMQ. Everything is configured under `old_sound_rabbit_mq` in `app/config/config.yml`, and a sample consumer that prints messages to the console is provided in `src/RabbitMQ/SampleBundle/Consumer/SampleConsumer.php`.
 
-The configuration is the following:
+The configuration is as follows:
 
 ```yaml
+# app/config/config.yml
 old_sound_rabbit_mq:
 	connections:
 		default:
@@ -107,9 +108,9 @@ old_sound_rabbit_mq:
 			callback:         sample_consumer
 ```
 
-![Principle](doc/images/principle.png)
-
 Messages to be delayed should be published using the `delayed_producer` producer with an empty routing key (`''`). The producer publishes messages to the `delay-exchange` exchange, and since the routing key is empty, they are routed to the `delay-waiting-queue` queue.
+
+![Principle](doc/images/principle.png)
 
 Since no consumer is bound to the `delay-waiting-queue` queue, messages are never processed. The queue, however, is configured with an `x-message-ttl` argument of 5000 milliseconds. Therefore, messages expire after 5 seconds and are discarded.
 
@@ -152,18 +153,28 @@ Start the consumer:
 
 	app/console rabbitmq:consumer delayed_consumer
 
-Leave it running and continue in a second terminal. If you want to stop it, type Control-$.
+Leave it running and continue in a second terminal. If you want to stop it, type `Control-$`.
 
-Publish a message using the `rabbitmq:stdin-producer`:
+Publish a message using the `rabbitmq:stdin-producer` command:
 
-	echo Hello | app/console rabbitmq:stdin-producer delayed_producer
+	echo -n Hello | app/console rabbitmq:stdin-producer delayed_producer
 
-and watch it (in the first terminal) being consumed after 5 seconds.
+and watch it (in the first terminal) being consumed after 5 seconds:
+
+	s:5:"Hello";
 
 ## Credits
 
-* [Grégoire Pineau](https://twitter.com/lyrixx) and [Olivier Dolbeau](http://twitter.com/odolbeau) for their presentation about RabbitMQ in Symfony at Symfony Live Paris 2014;
+* [Grégoire Pineau][lyrixx] and [Olivier Dolbeau][odolbeau] for their presentation about RabbitMQ in Symfony at Symfony Live Paris 2014;
 
-* [Alvaro Videla](https://twitter.com/old_sound) for `php-amqplib` and `rabbitmq-bundle`;
+* [Alvaro Videla][old_sound] for `php-amqplib` and `rabbitmq-bundle`;
 
-* [Udo Telaar](http://twitter.com/Telaar) and [Baptiste Clavié](http://twitter.com/talus_) for the motivation [(1)](http://twitter.com/Telaar/status/535796218589614080) [(2)](http://twitter.com/talus_/status/536821657374318592).
+* [Udo Telaar][Telaar] and [Baptiste Clavié][talus_] for the motivation ([1][mot-1], [2][mot-2]).
+
+[lyrixx]: https://twitter.com/lyrixx
+[odolbeau]: https://twitter.com/odolbeau
+[old_sound]: https://twitter.com/old_sound
+[Telaar]: https://twitter.com/Telaar
+[talus_]: https://twitter.com/talus_
+[mot-1]: https://twitter.com/Telaar/status/535796218589614080
+[mot-2]: https://twitter.com/talus_/status/536821657374318592
