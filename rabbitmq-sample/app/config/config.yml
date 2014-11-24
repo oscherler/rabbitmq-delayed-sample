@@ -80,3 +80,13 @@ old_sound_rabbit_mq:
             password: %rabbitmq_password%
             vhost:    %rabbitmq_vhost%
             lazy:     false
+    producers:
+        delay_example:
+            connection:       default
+            exchange_options: { name: 'delay-example', type: direct }
+    consumers:
+        delay_example:
+            connection:       default
+            exchange_options: { name: 'delay-example', type: direct }
+            queue_options:    { name: 'delay-work-queue' }
+            callback:         sample_consumer

@@ -1,4 +1,4 @@
 services:
-#    rabbit_mq_sample.example:
-#        class: RabbitMQ\SampleBundle\Example
-#        arguments: [@service_id, "plain_value", %parameter%]
+    sample_consumer:
+        class: RabbitMQ\SampleBundle\Consumer\SampleConsumer
+        arguments: []
