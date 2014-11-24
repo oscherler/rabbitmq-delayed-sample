@@ -34,6 +34,8 @@ class PublishCommand extends ContainerAwareCommand
 		$connection = new AMQPConnection( 'localhost', 5672, 'guest', 'guest' );
 		$channel = $connection->channel();
 		
+		$channel->queue_declare('task_queue');
+		
 		$channel->queue_declare( 'delay', false, true, false, false, false, array(
 			'x-message-ttl' => array( 'I', 10000 ),
 			'x-dead-letter-exchange' => array( 'S', '' ),
