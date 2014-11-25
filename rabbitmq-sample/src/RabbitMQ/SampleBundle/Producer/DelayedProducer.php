@@ -8,26 +8,34 @@ class DelayedProducer
 {
 	protected $connection;
 	protected $destination_exchange;
+	protected $prefix;
 	
-	public function __construct( $connection, $destination_exchange )
+	public function __construct( $connection, $destination_exchange, $prefix )
 	{
 		$this->connection = $connection;
 		$this->destination_exchange = $destination_exchange;
+
+		if( ! is_string( $prefix ) || strlen( $prefix ) > 60 )
+			throw new \UnexpectedValueException('Prefix should be a string of length <= 60.');
+
+		$this->prefix = $prefix;
 	}
 	
 	public function delayedPublish( $delay, $msgBody, $routingKey = '', $additionalProperties = array() )
 	{
-		$id = 'delay-waiting-queue-' . uniqid();
 		if( ! is_integer( $delay ) || $delay < 0 )
 			throw new \UnexpectedValueException('Publish delay should be a positive integer.');
 		
 		# expire the queue a little bit after the delay, but minimum 1 second
 		$expiration = 1000 + floor( 1.1 * $delay );
 		
+		$name = sprintf( '%s-exchange', $this->prefix );
+		$id = sprintf( '%s-waiting-queue-%d', $this->prefix, $delay );
+	
 		$producer = new Producer( $this->connection );
 		
 		$producer->setExchangeOptions( array(
-			'name' => 'delay-exchange',
+			'name' => $name,
 			'type' => 'direct'
 		) );
 		
