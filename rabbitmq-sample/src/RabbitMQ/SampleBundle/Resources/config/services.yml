@@ -5,6 +5,6 @@ services:
     delayed_producer:
         class: RabbitMQ\SampleBundle\Producer\DelayedProducer
         arguments:
-            - @old_sound_rabbit_mq.connection.default
-            - work-exchange
-            - delay
+            - @old_sound_rabbit_mq.connection.default # rabbitmq connection
+            - work-exchange # destination exchange name
+            - delay # delay exchange and queue prefix

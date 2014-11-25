@@ -20,6 +20,12 @@ class TestCommand extends ContainerAwareCommand
 		$this
 			->setName('sample:test')
 			->setDescription('Publishes a delayed message')
+			->addOption(
+				'delay',
+				'd',
+				InputOption::VALUE_REQUIRED,
+				'Delay, in miliseconds.'
+			)
 		;
 	}
 
@@ -30,6 +36,13 @@ class TestCommand extends ContainerAwareCommand
 	{
 		$producer = $this->getContainer()->get('delayed_producer');
 		
-		$producer->delayedPublish( 5000, 'Hello' );
+		$delay = (int) $input->getOption('delay');
+		
+		$body = json_encode( array(
+			'time' => microtime( true ),
+			'delay' => $delay
+		) );
+
+		$producer->delayedPublish( $delay, $body );
 	}
 }
