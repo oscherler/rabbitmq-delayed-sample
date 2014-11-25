@@ -57,32 +57,60 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # View the documentation for the provider you're using for more
   # information on available options.
 
-  config.vm.provision "shell", inline: <<INSTALL_RABBITMQ
+  config.vm.provision "shell", inline: <<'INSTALL_RABBITMQ'
+    # ensure add-apt-repository is installed
     dpkg --get-selections | grep python-software-properties || ( apt-get update ; apt-get -y install python-software-properties )
 
+    # add rabbitmq repository
 	add-apt-repository "deb http://www.rabbitmq.com/debian/ testing main"
 	wget -O - http://www.rabbitmq.com/rabbitmq-signing-key-public.asc | apt-key add -
 	apt-get update
+
+    # configure rabbitmq guest access
 	mkdir -p /etc/rabbitmq
 	echo "[{rabbit, [{loopback_users, []}]}]." > /etc/rabbitmq/rabbitmq.config
+
+	# install rabbitmq
 	apt-get -y install rabbitmq-server
+	
+	# enable management plugin
 	rabbitmq-plugins enable rabbitmq_management
 INSTALL_RABBITMQ
 
-  config.vm.provision "shell", inline: <<INSTALL_APACHE_PHP
-    apt-get -y install libapache2-mod-php5 php5-curl
-    wget -O - https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-INSTALL_APACHE_PHP
+  config.vm.provision "shell", inline: <<'INSTALL_APACHE'
+    # install apache2
+    apt-get -y install apache2.2-common apache2-mpm-prefork
+INSTALL_APACHE
 
-  config.vm.provision "shell", inline: <<CONFIGURE_APACHE
+  config.vm.provision "shell", inline: <<'INSTALL_PHP'
+    # install php5 and curl extension
+    apt-get -y install php5-common php5-cli libapache2-mod-php5 php5-curl
+
+    # install composer
+    wget -O - https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+INSTALL_PHP
+
+  config.vm.provision "shell", inline: <<'CONFIGURE_APACHE'
+    # stop apache and change run user
     service apache2 stop
     chown -R vagrant /var/lock/apache2
-    sed -i.bak -E 's/(export\\s+APACHE_RUN_(USER|GROUP)=)[^\\s]+/\\1vagrant/' /etc/apache2/envvars
-    cp /vagrant/vagrant/vhost.conf /etc/apache2/sites-available/rabbitmq-sample
+    sed -i.bak -E 's/(export\s+APACHE_RUN_(USER|GROUP)=)[^\s]+/\1vagrant/' /etc/apache2/envvars
+
+	# enable mod_rewrite    
     a2enmod rewrite
+
+    # install and enable virtual host
+    cp /vagrant/vagrant/vhost.conf /etc/apache2/sites-available/rabbitmq-sample
     a2ensite rabbitmq-sample
+    
+    # start apache
     service apache2 start
 CONFIGURE_APACHE
+
+  config.vm.provision "shell", inline: <<'AUTO_CD'
+    # add cd to project to .profile
+  	grep "cd /vagrant/rabbitmq-sample" ~/.profile || ( echo cd /vagrant/rabbitmq-sample >> ~/.profile )
+AUTO_CD
 
   # Enable provisioning with Puppet stand alone.  Puppet manifests
   # are contained in a directory path relative to this Vagrantfile.
