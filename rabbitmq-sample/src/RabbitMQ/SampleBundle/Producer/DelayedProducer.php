@@ -24,7 +24,7 @@ class DelayedProducer
 		$producer = new Producer( $this->connection );
 		
 		$producer->setExchangeOptions( array(
-			'name' => $this->exchange_name,
+			'name' => 'delay-exchange',
 			'type' => 'direct'
 		) );
 		
@@ -39,8 +39,6 @@ class DelayedProducer
 			)
 		) );
 		
-		$producer->setRoutingKey( $id );
-
 		$producer->setupFabric();
 		
 		$producer->publish( $msgBody, $id, $additionalProperties );

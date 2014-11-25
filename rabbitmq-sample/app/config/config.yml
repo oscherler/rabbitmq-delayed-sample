@@ -91,11 +91,9 @@ old_sound_rabbit_mq:
         delayed_consumer:
             connection:       default
             # Declare the `delay-exchange` exchange.
-            exchange_options: { name: 'delay-exchange', type: direct }
+            exchange_options: { name: 'work-exchange', type: direct }
             queue_options:
                 # Declare queue `delay-working-queue`.
-                name: 'delay-working-queue'
-                # The queue is bound to the `delay-exchange` exchange with an routing key of 'working'.
-                routing_keys: [ working ]
+                name: 'working-queue'
             # Messages are processed by the `sample_consumer` service.
             callback:         sample_consumer

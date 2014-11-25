@@ -6,5 +6,5 @@ services:
         class: RabbitMQ\SampleBundle\Producer\DelayedProducer
         arguments:
             - @old_sound_rabbit_mq.connection.default
-            - delay-exchange
+            - work-exchange
             - 15000
