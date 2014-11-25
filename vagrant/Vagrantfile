@@ -109,7 +109,8 @@ CONFIGURE_APACHE
 
   config.vm.provision "shell", inline: <<'AUTO_CD'
     # add cd to project to .profile
-  	grep "cd /vagrant/rabbitmq-sample" ~/.profile || ( echo cd /vagrant/rabbitmq-sample >> ~/.profile )
+  	grep "cd /vagrant/rabbitmq-sample" /home/vagrant/.profile || ( echo cd /vagrant/rabbitmq-sample >> /home/vagrant/.profile )
+	echo 
 AUTO_CD
 
   # Enable provisioning with Puppet stand alone.  Puppet manifests
