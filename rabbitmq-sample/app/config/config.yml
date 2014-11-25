@@ -81,28 +81,6 @@ old_sound_rabbit_mq:
             vhost:    %rabbitmq_vhost%
             lazy:     false
 
-    producers:
-        # The `delayed_producer` producer publishes messages to the `delay-exchange` exchange.
-        # 
-        # If the routing key is '', they are routed to the `delay-waiting-queue` queue,
-        # to which no consumer is connected.
-        delayed_producer:
-            connection:       default
-            # Publish to the `delay-exchange` exchange.
-            exchange_options: { name: 'delay-exchange', type: direct }
-            queue_options:
-                # Declare queue `delay-waiting-queue`.
-                name: 'delay-waiting-queue'
-                # The queue is bound to the exchange with an empty routing key ('').
-                routing-keys: []
-                arguments:
-                    # Messages in this queue expire after 5 seconds (5000 ms).
-                    x-message-ttl: [ 'I', 5000 ]
-                    # Expired messages are published back to the `delay-exchange` exchange…
-                    x-dead-letter-exchange: [ 'S', 'delay-exchange' ]
-                    # … with a routing key of 'working'.
-                    x-dead-letter-routing-key: [ 'S', 'working' ]
-
     consumers:
         # The `delayed_consumer` consumer retrieves messages from the `delay-working-queue` queue,
         # which is bound to the `delay-exchange` exchange with a routing key of 'working'.
