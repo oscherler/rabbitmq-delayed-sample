@@ -7,4 +7,3 @@ services:
         arguments:
             - @old_sound_rabbit_mq.connection.default
             - work-exchange
-            - 15000

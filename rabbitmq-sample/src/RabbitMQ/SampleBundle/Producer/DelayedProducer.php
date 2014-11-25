@@ -7,20 +7,23 @@ use OldSound\RabbitMqBundle\RabbitMq\Producer;
 class DelayedProducer
 {
 	protected $connection;
-	protected $exchange_name;
-	protected $delay;
+	protected $destination_exchange;
 	
-	public function __construct( $connection, $exchange_name, $delay )
+	public function __construct( $connection, $destination_exchange )
 	{
 		$this->connection = $connection;
-		$this->exchange_name = $exchange_name;
-		$this->delay = $delay;
+		$this->destination_exchange = $destination_exchange;
 	}
 	
-	public function publish( $msgBody, $routingKey = '', $additionalProperties = array() )
+	public function delayedPublish( $delay, $msgBody, $routingKey = '', $additionalProperties = array() )
 	{
 		$id = 'delay-waiting-queue-' . uniqid();
-	
+		if( ! is_integer( $delay ) || $delay < 0 )
+			throw new \UnexpectedValueException('Publish delay should be a positive integer.');
+		
+		# expire the queue a little bit after the delay, but minimum 1 second
+		$expiration = 1000 + floor( 1.1 * $delay );
+		
 		$producer = new Producer( $this->connection );
 		
 		$producer->setExchangeOptions( array(
@@ -32,10 +35,10 @@ class DelayedProducer
 			'name' => $id,
 			'routing_keys' => array( $id ),
 			'arguments' => array(
-				'x-message-ttl' => array( 'I', $this->delay ),
-				'x-dead-letter-exchange' => array( 'S', $this->exchange_name ),
+				'x-message-ttl' => array( 'I', $delay ),
+				'x-dead-letter-exchange' => array( 'S', $this->destination_exchange ),
 				'x-dead-letter-routing-key' => array( 'S', $routingKey ),
-				'x-expires' => array( 'I', 1.1 * $this->delay )
+				'x-expires' => array( 'I', $expiration )
 			)
 		) );
 		

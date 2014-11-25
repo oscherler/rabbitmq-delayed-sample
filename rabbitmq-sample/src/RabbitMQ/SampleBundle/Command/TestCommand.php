@@ -30,6 +30,6 @@ class TestCommand extends ContainerAwareCommand
 	{
 		$producer = $this->getContainer()->get('delayed_producer');
 		
-		$producer->publish('Hello');
+		$producer->delayedPublish( 5000, 'Hello' );
 	}
 }
