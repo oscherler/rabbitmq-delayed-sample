@@ -2,3 +2,9 @@ services:
     sample_consumer:
         class: RabbitMQ\SampleBundle\Consumer\SampleConsumer
         arguments: []
+    delayed_producer:
+        class: RabbitMQ\SampleBundle\Producer\DelayedProducer
+        arguments:
+            - @old_sound_rabbit_mq.connection.default
+            - delay-exchange
+            - 15000
