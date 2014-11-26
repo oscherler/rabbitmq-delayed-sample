@@ -30,7 +30,7 @@ class DelayedProducer
 		$expiration = 1000 + floor( 1.1 * $delay );
 		
 		$name = sprintf( '%s-exchange', $this->prefix );
-		$id = sprintf( '%s-waiting-queue-%d', $this->prefix, $delay );
+		$id = sprintf( '%s-waiting-queue-%s-%d', $this->prefix, $routingKey, $delay );
 	
 		$producer = new Producer( $this->connection );
 		
