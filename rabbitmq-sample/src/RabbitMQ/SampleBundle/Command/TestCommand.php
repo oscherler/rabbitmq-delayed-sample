@@ -26,6 +26,13 @@ class TestCommand extends ContainerAwareCommand
 				InputOption::VALUE_REQUIRED,
 				'Delay, in miliseconds.'
 			)
+			->addOption(
+				'routing-key',
+				'r',
+				InputOption::VALUE_OPTIONAL,
+				'Routing key.',
+				''
+			)
 		;
 	}
 
@@ -43,6 +50,6 @@ class TestCommand extends ContainerAwareCommand
 			'delay' => $delay
 		) );
 
-		$producer->delayedPublish( $delay, $body );
+		$producer->delayedPublish( $delay, $body, $input->getOption('routing-key') );
 	}
 }
