@@ -2,7 +2,7 @@
 
 Sample Symfony project showing how to achieve delayed processing of messages in RabbitMQ using `videlalvaro/php-amqplib` and `oldsound/rabbitmq-bundle`.
 
-The delay is achieved using a consumer-less queue with a message TTL and a Dead-Letter Exchange.
+The delay is achieved using temporary, consumer-less queues created on-the-fly with a message TTL and a Dead-Letter Exchange.
 
 ## Installation
 
@@ -55,68 +55,75 @@ This project uses `videlalvaro/php-amqplib` and `oldsound/rabbitmq-bundle` to co
 The configuration is as follows:
 
 ```yaml
-# app/config/config.yml
 old_sound_rabbit_mq:
-	connections:
-		default:
-			host:     %rabbitmq_host%
-			port:     %rabbitmq_port%
-			user:     %rabbitmq_user%
-			password: %rabbitmq_password%
-			vhost:    %rabbitmq_vhost%
-			lazy:     false
+    connections:
+        default:
+            host:     %rabbitmq_host%
+            port:     %rabbitmq_port%
+            user:     %rabbitmq_user%
+            password: %rabbitmq_password%
+            vhost:    %rabbitmq_vhost%
+            lazy:     false
 
-	producers:
-		# The `delayed_producer` producer publishes messages to the `delay-exchange` exchange.
-		# 
-		# If the routing key is '', they are routed to the `delay-waiting-queue` queue,
-		# to which no consumer is connected.
-		delayed_producer:
-			connection:       default
-			# Publish to the `delay-exchange` exchange.
-			exchange_options: { name: 'delay-exchange', type: direct }
-			queue_options:
-				# Declare queue `delay-waiting-queue`.
-				name: 'delay-waiting-queue'
-				# The queue is bound to the exchange with an empty routing key ('').
-				routing-keys: []
-				arguments:
-					# Messages in this queue expire after 5 seconds (5000 ms).
-					x-message-ttl: [ 'I', 5000 ]
-					# Expired messages are published back to the `delay-exchange` exchange…
-					x-dead-letter-exchange: [ 'S', 'delay-exchange' ]
-					# … with a routing key of 'working'.
-					x-dead-letter-routing-key: [ 'S', 'working' ]
-
-	consumers:
-		# The `delayed_consumer` consumer retrieves messages from the `delay-working-queue` queue,
-		# which is bound to the `delay-exchange` exchange with a routing key of 'working'.
-		# 
-		# Messages published to the `delay-exchange` exchange with a routing key of 'working'
-		# (typically expired messages from the `delay-waiting-queue` queue) will be routed
-		# to the `delay-working-queue` queue and will be consumed by this consumer.
-		delayed_consumer:
-			connection:       default
-			# Declare the `delay-exchange` exchange.
-			exchange_options: { name: 'delay-exchange', type: direct }
-			queue_options:
-				# Declare queue `delay-working-queue`.
-				name: 'delay-working-queue'
-				# The queue is bound to the `delay-exchange` exchange with an routing key of 'working'.
-				routing_keys: [ working ]
-			# Messages are processed by the `sample_consumer` service.
-			callback:         sample_consumer
+    consumers:
+        # The `work-exchange` exchange will receive the messages after they have been delayed.
+        # This is a sample set-up. Any configuration would do, the only important thing is to
+        # configure the `delayed_producer` service with the name of the exchange declared here.
+        # 
+        # In this example, messages published to the `work-exchange` exchange with an empty
+        # routing key (i.e. expired messages from the delay queue created by the `DelayedProducer`)
+        # will be routed to the `working-queue` queue and will be consumed by this consumer.
+        work_consumer:
+            connection:       default
+            # Declare exchange `work-exchange`.
+            exchange_options: { name: 'work-exchange', type: direct }
+            queue_options:
+                # Declare queue `working-queue`.
+                name: 'working-queue'
+            # Messages are processed by the `sample_consumer` service.
+            callback:         sample_consumer
 ```
 
-Messages to be delayed should be published using the `delayed_producer` producer with an empty routing key (`''`). The producer publishes messages to the `delay-exchange` exchange, and since the routing key is empty, they are routed to the `delay-waiting-queue` queue.
+Messages to be delayed should be published using the `delayed_producer` service with a delay in milliseconds and an empty routing key:
+
+	$container->get('delayed_producer')->delayedPublish( 5000, $messageBody, '' );
+
+The service takes three constructor arguments:
+
+```yaml
+# src/RabbitMQ/SampleBundle/Resources/config/services.yml
+services:
+    # ...
+    delayed_producer:
+        class: RabbitMQ\SampleBundle\Producer\DelayedProducer
+        arguments:
+            - @old_sound_rabbit_mq.connection.default # rabbitmq connection
+            - work-exchange # destination exchange name
+            - delay # delay exchange and queue prefix
+```
+
+- an AMPQ connection;
+- the name of the destination exchange;
+- a prefix used to name the delay exchange and the queues, to avoid naming collisions.
 
 ![Principle](rabbitmq-sample/doc/images/principle.png)
 
-Since no consumer is bound to the `delay-waiting-queue` queue, messages are never processed. The queue, however, is configured with an `x-message-ttl` argument of 5000 milliseconds. Therefore, messages expire after 5 seconds and are discarded.
+The `DelayedProducer` creates an exchange called `$prefix-exchange`. Then, when it receives a message, it creates a temporary queue called `'$prefix-waiting-queue-$routing_key-$delay`, with the following properties:
 
-Furthermore, the queue has a *dead-letter exchange* configured, through the `x-dead-letter-exchange` and `x-dead-letter-routing-key` arguments. It means that discarded messages are re-published to the exchange given by `x-dead-letter-exchange` (which, in our case, is the same `delay-exchange`), with the routing key given by `x-dead-letter-routing-key`. This time, the latter, instead of being empty, is set to `working`, which means that the re-posted message will now be sent to the `delay-working-queue` queue, since it is bound to the `delay-exchange` exchange with the `working` routing key.
+- `routing_keys`: same as the queue name
+- `arguments`:
+	- `x-message-ttl`: the delay given in `delayedPublish`, in milliseconds
+	- `x-dead-letter-exchange`: the exchanged configured for the `delayed_producer` service
+	- `x-dead-letter-routing-key` the routing key given in `delayedPublish`
+	- `x-expires`: an expiration time slightly longer than the delay (1.1 * delay + 1 second)
 
-Our sample consumer consumes from the `delay-working-queue` queue, and will therefore receive messages after the delay given in `x-message-ttl`. The consumer is declared as service:
+Since no consumer is bound to the temporary queue, messages are never processed. The queue, however, is configured with an `x-message-ttl` argument corresponding to the desired delay. Therefore, messages expire after this delay and are discarded.
+
+Furthermore, the queue has a *dead-letter exchange* configured, through the `x-dead-letter-exchange` and `x-dead-letter-routing-key` arguments. It means that discarded messages are re-published to the exchange given by `x-dead-letter-exchange`, which is the exchange that we configured to actually handle the messages, with the routing key given by `x-dead-letter-routing-key`, which is the routing key given when publishing to the `DelayedProducer`.
+
+In our sampe configuration, the *dead-letter exchange* is `work-exchange`. Messages published with an empty routing key will be routed to `working-queue` and our sample consumer, which consumes from it, will therefore receive the messages after the delay given when publishing them.
+
+The consumer is declared as service:
 
 ```yaml
 # src/RabbitMQ/SampleBundle/Resources/config/services.yml
@@ -142,7 +149,7 @@ class SampleConsumer implements ConsumerInterface
 {
 	public function execute( AMQPMessage $msg )
 	{
-		echo $msg->body . "\n";
+		# ...
 	}
 }
 ```
@@ -151,17 +158,26 @@ class SampleConsumer implements ConsumerInterface
 
 Start the consumer:
 
-	app/console rabbitmq:consumer delayed_consumer
+	app/console rabbitmq:consumer work_consumer
 
 Leave it running and continue in a second terminal. If you want to stop it, type `Control-$`.
 
-Publish a message using the `rabbitmq:stdin-producer` command:
+Publish a message using the `sample:test` command:
 
-	echo -n Hello | app/console rabbitmq:stdin-producer delayed_producer
+	app/console sample:test --delay 5000
 
 and watch it (in the first terminal) being consumed after 5 seconds:
 
-	s:5:"Hello";
+	Sent 4974 ms ago with delay 5000.
+
+The messages published by the `sample:test` command contain the current time and the requested delay, so that the sample consumer can calculate the actual delay and display it.
+
+Experiment with varous delays, and watch the temporary queues being created and automatically deleted in the RabbitMQ management interface.
+
+## To Do
+
+- Explain weird queue naming;
+- Explain queue expiration.
 
 ## Credits
 

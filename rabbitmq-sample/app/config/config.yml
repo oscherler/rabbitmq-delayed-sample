@@ -82,18 +82,19 @@ old_sound_rabbit_mq:
             lazy:     false
 
     consumers:
-        # The `delayed_consumer` consumer retrieves messages from the `delay-working-queue` queue,
-        # which is bound to the `delay-exchange` exchange with a routing key of 'working'.
+        # The `work-exchange` exchange will receive the messages after they have been delayed.
+        # This is a sample set-up. Any configuration would do, the only important thing is to
+        # configure the `delayed_producer` service with the name of the exchange declared here.
         # 
-        # Messages published to the `delay-exchange` exchange with a routing key of 'working'
-        # (typically expired messages from the `delay-waiting-queue` queue) will be routed
-        # to the `delay-working-queue` queue and will be consumed by this consumer.
-        delayed_consumer:
+        # In this example, messages published to the `work-exchange` exchange with an empty
+        # routing key (i.e. expired messages from the delay queue created by the `DelayedProducer`)
+        # will be routed to the `working-queue` queue and will be consumed by this consumer.
+        work_consumer:
             connection:       default
-            # Declare the `delay-exchange` exchange.
+            # Declare exchange `work-exchange`.
             exchange_options: { name: 'work-exchange', type: direct }
             queue_options:
-                # Declare queue `delay-working-queue`.
+                # Declare queue `working-queue`.
                 name: 'working-queue'
             # Messages are processed by the `sample_consumer` service.
             callback:         sample_consumer
