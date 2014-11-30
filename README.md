@@ -23,7 +23,7 @@ After [installing Vagrant][install_vagrant], change to the `vagrant` directory a
 
 Vagrant will create the virtual machine and provision it (which is fancy lingo for “install the stuff that’s required, and then some”). It can take a few minutes and display a lot of green and red gibberish. That’s normal.
 
-Then connect to the machine and change to the project directory:
+Then connect to the machine and change to the project directory, if not already in it:
 
 	vagrant ssh
 	cd /vagrant/rabbitmq-sample
@@ -55,6 +55,7 @@ This project uses `videlalvaro/php-amqplib` and `oldsound/rabbitmq-bundle` to co
 The configuration is as follows:
 
 ```yaml
+# app/config/config.yml
 old_sound_rabbit_mq:
     connections:
         default:
@@ -119,7 +120,7 @@ The `DelayedProducer` creates an exchange called `$prefix-exchange`. Then, when 
 
 Since no consumer is bound to the temporary queue, messages are never processed. The queue, however, is configured with an `x-message-ttl` argument corresponding to the desired delay. Therefore, messages expire after this delay and are discarded.
 
-Furthermore, the queue has a *dead-letter exchange* configured, through the `x-dead-letter-exchange` and `x-dead-letter-routing-key` arguments. It means that discarded messages are re-published to the exchange given by `x-dead-letter-exchange`, which is the exchange that we configured to actually handle the messages, with the routing key given by `x-dead-letter-routing-key`, which is the routing key given when publishing to the `DelayedProducer`.
+Furthermore, the queue has a *dead-letter exchange* configured, through the `x-dead-letter-exchange` and `x-dead-letter-routing-key` arguments. It means that expired messages, instead of being discarded, are *dead-lettered*: they are re-published to the exchange given by `x-dead-letter-exchange`, which is the exchange that we configured to actually handle the messages. Dead-lettered messages are re-published with the routing key configured by `x-dead-letter-routing-key`, which is the one given when publishing to the `DelayedProducer`.
 
 In our sampe configuration, the *dead-letter exchange* is `work-exchange`. Messages published with an empty routing key will be routed to `working-queue` and our sample consumer, which consumes from it, will therefore receive the messages after the delay given when publishing them.
 
@@ -166,18 +167,54 @@ Publish a message using the `sample:test` command:
 
 	app/console sample:test --delay 5000
 
-and watch it (in the first terminal) being consumed after 5 seconds:
+and watch it (in the first terminal) being consumed after (roughly) 5 seconds:
 
 	Sent 4974 ms ago with delay 5000.
 
 The messages published by the `sample:test` command contain the current time and the requested delay, so that the sample consumer can calculate the actual delay and display it.
 
-Experiment with varous delays, and watch the temporary queues being created and automatically deleted in the RabbitMQ management interface.
+Experiment with various delays, and watch the temporary queues being created and automatically deleted in the RabbitMQ management interface.
 
-## To Do
+You can also change the configuration of the `work_consumer`, for example by adding a routing key to the queue (don’t forget to restart the consumer for the change to take effect):
 
-- Explain weird queue naming;
-- Explain queue expiration.
+```yaml
+# app/config/config.yml
+# ...
+work_consumer:
+    # ...
+    queue_options:
+        # Declare queue `working-queue`.
+        name: 'working-queue'
+        routing_keys: [ a_key ]
+```
+
+and try:
+
+	app/console sample:test --delay 5000
+	app/console sample:test --delay 5000 --routing-key a_key
+	app/console sample:test --delay 5000 --routing-key another_key
+
+## Questions and Answers
+
+**Q: Why create a different queue for each delay? Why not use a single queue and per-message TTL?**
+
+**A:** When specifying TTL on a per-message basis using the `expiration` field upon publishing, messages will only be dead-lettered [once they reach the end of the queue][caveats]. It means that if we published message A with a delay of 10 seconds and then message B with a delay of 5 seconds, then message B would sit in the queue behind message A for 10 seconds before it would reach the end of the queue and be dead-lettered. It would therefore be processed too late. Of course, it’s only a problem when you use TTL as a delay mechanism using dead-lettering. When you just want old messages to be discarded, it’s perfectly fine the way it is.
+
+[caveats]: https://www.rabbitmq.com/ttl.html#per-message-ttl-caveats
+
+**Q: Why the weird queue names?**
+
+**A:** Since the delay is configured at the queue level, we need one queue per delay value. The same goes for the routing key. Thus, we need a new queue for each (delay, routing key) pair. If you try to re-declare a queue with an existing name but different parameters, you will get an error. We could just create a new queue with a unique name for each message, but it’s not needed since re-declaring a queue with the same name and properties as an existing queue reuses the existing one.
+
+**Q: What is this `x-expires` value on the delay queues?**
+
+**A:** As we are creating a new queue for each new value of the delay or the routing key, depending on the use case (e.g. if you calculate the delay for the message to be processed at a given time), we might end up with many delay queues that won’t be reused. Thus, we make them expire after they’re not used for some time, using the `x-expires` argument. This value should not be shorter than or equal to `x-message-ttl`, otherwise the queue might be deleted before the message is dead-lettered (see [Queue TTL][queue-ttl]), so I chose a TTL that’s a bit longer than the delay.
+
+[queue-ttl]: https://www.rabbitmq.com/ttl.html#queue-ttl
+
+## Disclaimer
+
+I am not (yet) a RabbitMQ expert, so if you feel that I did something wrong, you’re probably right. Don’t hesitate to point it out in an issue. Thank you.
 
 ## Credits
 
