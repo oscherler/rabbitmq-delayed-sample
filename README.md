@@ -8,7 +8,9 @@ The delay is achieved using temporary, consumer-less queues created on-the-fly w
 
 First, clone the repository:
 
-	git clone https://github.com/oscherler/rabbitmq-delayed-sample.git
+```bash
+git clone https://github.com/oscherler/rabbitmq-delayed-sample.git
+```
 
 Then continue to [Using Vagrant](#using-vagrant) if you are a Vagrant user, or [Without Vagrant](#without-vagrant) otherwise.
 
@@ -18,15 +20,19 @@ The project includes a Vagrant file to set up a virtual machine with Apache, PHP
 
 After [installing Vagrant][install_vagrant], change to the `vagrant` directory and type `vagrant up`:
 
-	cd rabbitmq-delayed-sample/vagrant
-	vagrant up
+```bash
+cd rabbitmq-delayed-sample/vagrant
+vagrant up
+```
 
 Vagrant will create the virtual machine and provision it (which is fancy lingo for “install the stuff that’s required, and then some”). It can take a few minutes and display a lot of green and red gibberish. That’s normal.
 
 Then connect to the machine and change to the project directory, if not already in it:
 
-	vagrant ssh
-	cd /vagrant/rabbitmq-sample
+```bash
+vagrant ssh
+cd /vagrant/rabbitmq-sample
+```
 
 and continue to [Set-Up](#set-up).
 
@@ -36,7 +42,9 @@ and continue to [Set-Up](#set-up).
 
 Make sure you have PHP, Composer and RabbitMQ installed, then change to the project directory:
 
-	cd rabbitmq-delayed-sample/rabbitmq-sample
+```bash
+cd rabbitmq-delayed-sample/rabbitmq-sample
+```
 
 and continue to [Set-Up](#set-up).
 
@@ -44,7 +52,9 @@ and continue to [Set-Up](#set-up).
 
 Install the project dependencies using Composer:
 
-	composer install
+```bash
+composer install
+```
 
 It will ask for the value of some parameters. If you are using the provided Vagrant machine, just keep the default values by hitting *Enter* until it stops asking. If you are working in your own environment, fill in the `rabbitmq_*` parameters with the values required to connect to your RabbitMQ server, and keep the default values for the remaining parameters.
 
@@ -87,7 +97,9 @@ old_sound_rabbit_mq:
 
 Messages to be delayed should be published using the `delayed_producer` service with a delay in milliseconds and an empty routing key:
 
-	$container->get('delayed_producer')->delayedPublish( 5000, $messageBody, '' );
+```php
+$container->get('delayed_producer')->delayedPublish( 5000, $messageBody, '' );
+```
 
 The service takes three constructor arguments:
 
@@ -137,10 +149,7 @@ services:
 and implements `OldSound\RabbitMqBundle\RabbitMq\ConsumerInterface`:
 
 ```php
-<?php
-
 # src/RabbitMQ/SampleBundle/Consumer/SampleConsumer.php
-
 namespace RabbitMQ\SampleBundle\Consumer;
 
 use OldSound\RabbitMqBundle\RabbitMq\ConsumerInterface;
@@ -159,17 +168,23 @@ class SampleConsumer implements ConsumerInterface
 
 Start the consumer:
 
-	app/console rabbitmq:consumer work_consumer
+```bash
+app/console rabbitmq:consumer work_consumer
+```
 
 Leave it running and continue in a second terminal. If you want to stop it, type `Control-$`.
 
 Publish a message using the `sample:test` command:
 
-	app/console sample:test --delay 5000
+```bash
+app/console sample:test --delay 5000
+```
 
 and watch it (in the first terminal) being consumed after (roughly) 5 seconds:
 
-	Sent 4974 ms ago with delay 5000.
+```bash
+Sent 4974 ms ago with delay 5000.
+```
 
 The messages published by the `sample:test` command contain the current time and the requested delay, so that the sample consumer can calculate the actual delay and display it.
 
@@ -190,9 +205,11 @@ work_consumer:
 
 and try:
 
-	app/console sample:test --delay 5000
-	app/console sample:test --delay 5000 --routing-key a_key
-	app/console sample:test --delay 5000 --routing-key another_key
+```bash
+app/console sample:test --delay 5000
+app/console sample:test --delay 5000 --routing-key a_key
+app/console sample:test --delay 5000 --routing-key another_key
+```
 
 ## Questions and Answers
 
